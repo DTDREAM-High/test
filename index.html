@@ -154,7 +154,19 @@
       background-color: #FEE2E2; padding: 2px 4px; border-radius: 4px;
       white-space: nowrap;
     }
-
+    /* 로딩 스켈레톤 애니메이션 */
+    .skeleton-card {
+      background: #EAE5DE;
+      border-radius: 12px;
+      height: 52px;
+      animation: pulse 1.5s infinite ease-in-out;
+    }
+    
+    @keyframes pulse {
+      0% { opacity: 0.5; }
+      50% { opacity: 1; }
+      100% { opacity: 0.5; }
+    }
     .member-count { font-size: 12px; color: var(--text-sub); background: var(--bg); padding: 3px 6px; border-radius: 8px; flex-shrink: 0; }
 
     /* 상세 화면 및 그룹 박스 */
@@ -328,15 +340,42 @@
   const tempDisplay = document.getElementById('temp-display');
   const tempBar = document.getElementById('temp-bar');
 
+// 1. 데이터 로딩 중 보여줄 스켈레톤(UI 뼈대) 생성 함수
+  function renderSkeleton() {
+    memberGrid.innerHTML = '';
+    for (let i = 0; i < 8; i++) {
+      const skel = document.createElement('div');
+      skel.className = 'skeleton-card';
+      memberGrid.appendChild(skel);
+    }
+  }
+
+  // 2. 캐시 우선 표시 + 데이터 변경 시에만 화면 갱신하는 loadData 함수
   async function loadData() {
+    // A. 저장된 캐시가 있으면 즉시(0초) 화면에 표시
+    const cachedData = localStorage.getItem('cached_prayer_tsv');
+    if (cachedData) {
+      parseTSVData(cachedData);
+    } else {
+      renderSkeleton(); // 캐시가 전혀 없으면 스켈레톤 카드 표시
+    }
+
+    // B. 백그라운드에서 구글 시트 최신 데이터 가져오기
     try {
       const response = await fetch(TSV_URL);
       if (!response.ok) throw new Error("네트워크 응답 오류");
       const tsvText = await response.text();
-      parseTSVData(tsvText);
+      
+      // 💡 데이터가 새로 바뀌었을 때만 캐시를 업데이트하고 화면을 다시 렌더링 (깜빡임 방지)
+      if (tsvText !== cachedData) {
+        localStorage.setItem('cached_prayer_tsv', tsvText);
+        parseTSVData(tsvText);
+      }
     } catch (error) {
       console.error(error);
-      showModal("연동 오류", "구글 시트 데이터를 불러오지 못했습니다.");
+      if (!cachedData) {
+        showModal("연동 오류", "구글 시트 데이터를 불러오지 못했습니다.");
+      }
     }
   }
 
@@ -415,9 +454,9 @@
     const isLeader = rolesMap[name] === '순장';
 
     const iconSvg = isLeader 
-  ? `<svg viewBox="0 0 24 24" style="stroke:var(--leader-gold); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;"><circle cx="12" cy="12" r="10"/><path d="m12 17.75-6.172 3.245 1.179-6.873-4.994-4.867 6.9-1.002L12 2l3.087 6.253 6.9 1.002-4.994 4.867 1.179 6.873z"/></svg>`
+ ? `<svg viewBox="0 0 24 24" style="fill:var(--leader-gold); stroke:var(--leader-gold); stroke-width:1;"><path d="M12 2l3.09 6.26 6.91 1.01-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`
   : `<svg viewBox="0 0 24 24" style="stroke:var(--primary); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
-  
+    
     memberDetailName.innerHTML = `${iconSvg} ${name} ${isLeader ? '순장' : '순원'}`;
     
     const prayers = prayerData[name];
@@ -523,65 +562,78 @@
     showModal("글자 크기 변경", isLargeFont ? "글자 크기가 확대되었습니다." : "글자 크기가 기본으로 설정되었습니다.");
   }
 
+  // 접속 시 현재 기온 계산 및 표시
   function initTemperature() {
-    const lastPrayTime = localStorage.getItem('last_pray_time');
+    const lastPrayDate = localStorage.getItem('last_pray_date');
     let streak = parseInt(localStorage.getItem('pray_streak') || '0');
-    let temp = 5;
+    let temp = 5; // 기본 5도
 
-    if (lastPrayTime) {
-      const diffHours = (new Date() - new Date(lastPrayTime)) / (1000 * 60 * 60);
-      if (diffHours <= 36) {
+    if (lastPrayDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const lastDate = new Date(lastPrayDate);
+      lastDate.setHours(0, 0, 0, 0);
+
+      const diffDays = Math.round((today - lastDate) / (1000 * 60 * 60 * 24));
+
+      if (diffDays <= 1) {
+        // 어제 또는 오늘 기도함 -> 연속 체온 유지
         temp = 36.5 + ((streak - 1) * 2.5);
         temp = Math.min(100, temp);
-      } else if (diffHours <= 72) {
-        temp = 36.5;
       } else {
+        // 2일 이상 안 함 -> 온도가 다시 식음 (10도)
         temp = 10;
+        localStorage.setItem('pray_streak', '0');
       }
     }
     updateTempUI(temp);
   }
 
+  // 기도 참여 버튼 클릭 시
   function recordPrayer() {
     const now = new Date();
-    // YYYY-MM-DD 형식으로 오늘 날짜 추출
+    // YYYY-MM-DD 날짜 추출
     const todayStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
     
     const lastPrayDate = localStorage.getItem('last_pray_date');
     let streak = parseInt(localStorage.getItem('pray_streak') || '0');
 
-    // 이미 오늘 눌렀는지 확인 (날짜 비교)
+    // 이미 오늘 눌렀는지 체크 (날짜 기준)
     if (lastPrayDate === todayStr) {
-      showModal("기도 완료", "오늘 이미 기도를 완료하셨습니다!\n내일(밤 12시 이후)에 다시 참여해주세요.");
+      showModal("기도 완료", "오늘 이미 기도를 완료하셨습니다!\n내일 다시 참여해 주세요.");
       return;
     }
 
-    // 연속 기도 일수 계산
     if (lastPrayDate) {
-      const lastDate = new Date(lastPrayDate);
-      const diffTime = Math.abs(now - lastDate);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const todayObj = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const lastArr = lastPrayDate.split('-').map(Number);
+      const lastObj = new Date(lastArr[0], lastArr[1] - 1, lastArr[2]);
 
-      if (diffDays <= 2) { 
-        streak += 1; // 어제 누르고 오늘 누른 경우 (연속 성공)
+      const diffDays = Math.round((todayObj - lastObj) / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 1) {
+        // 어제 누르고 오늘 또 누름 (연속 성공 -> streak 증가!)
+        streak += 1;
       } else {
-        streak = 1; // 며칠 쉬었다가 누른 경우 초기화
+        // 중간에 날짜를 거름 (연속 끊김 -> 1일차부터 재시작)
+        streak = 1;
       }
     } else {
+      // 처음 누름
       streak = 1;
     }
 
-    // 정보 저장
-    localStorage.getItem('last_pray_time', now.toISOString());
+    // 기록 저장
     localStorage.setItem('last_pray_date', todayStr);
     localStorage.setItem('pray_streak', streak.toString());
 
-    // 기도 온도 계산 (기본 36.5도 + 연속 1일당 2.5도 상승, 최대 100도)
+    // 온도 계산: 1일차 36.5도 / 2일차 39.0도 / 3일차 41.5도 ... (최대 100도)
     let temp = 36.5 + ((streak - 1) * 2.5);
     temp = Math.min(100, temp);
 
     updateTempUI(temp);
-    showModal("기도 완료 🙏", `오늘의 기도에 함께해주셔서 감사합니다!\n현재 다락방 기도 온도가 ${temp}°C입니다.`);
+    showModal("기도 완료 🙏", `오늘의 기도에 함께해주셔서 감사합니다!\n연속 ${streak}일째 참여 중입니다.\n현재 다락방 기도 온도: ${temp}°C`);
   }
 
   function updateTempUI(temp) {
