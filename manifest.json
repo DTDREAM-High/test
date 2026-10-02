@@ -1,0 +1,20 @@
+{
+  "name": "동탄드림교회 직장10여 기도수첩",
+  "short_name": "기도수첩",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#F9F6F0",
+  "theme_color": "#E87A5D",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2907/2907150.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2907/2907150.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

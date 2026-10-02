@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>동탄드림교회 직장10여 다락방 기도수첩</title>
+  
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" href="#E87A5D">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #E87A5D;
+      --primary-light: #FDF3F0;
+      --bg: #F9F6F0;
+      --card-bg: #FFFFFF;
+      --text-main: #2D2926;
+      --text-sub: #7A7571;
+      --accent-green: #5B8C5A;
+      --urgent-red: #DC2626;
+      --urgent-bg: #FEF2F2;
+      --urgent-border: #FCA5A5;
+      --leader-gold: #D97706;
+      --leader-bg: #FEF3C7;
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0; padding: 0;
+      font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    #app-container {
+      width: 100%;
+      max-width: 480px;
+      background-color: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 0 20px rgba(0,0,0,0.05);
+    }
+
+    header {
+      padding: 18px 20px 12px;
+      background-color: var(--bg);
+      position: sticky; top: 0; z-index: 10;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .church-info .sub { font-size: 14px; color: var(--primary); font-weight: 700; }
+    .church-info .title { font-size: 21px; font-weight: 700; color: var(--text-main); margin-top: 2px; }
+
+    .btn-icon-bg {
+      background: #FFF; border: 1px solid #EAE5DE;
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-main); cursor: pointer;
+    }
+    .btn-icon-bg svg {
+      width: 20px; height: 20px; stroke: var(--text-main); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    /* 온도 카드 */
+    .temp-card {
+      margin: 0 20px 14px;
+      background: linear-gradient(135deg, #FFFFFF 0%, #FFF9F6 100%);
+      border: 1px solid #F3E5DC; border-radius: var(--radius);
+      padding: 14px 16px; box-shadow: 0 4px 12px rgba(232, 122, 93, 0.06);
+      transition: all 0.3s ease;
+    }
+    .temp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .temp-title { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 16px; }
+    .temp-title svg { width: 18px; height: 18px; stroke: var(--primary); fill: none; stroke-width: 2; }
+    .temp-value { font-size: 22px; font-weight: 700; color: var(--primary); }
+    .progress-bar-bg { width: 100%; height: 8px; background-color: #EFE8E1; border-radius: 4px; overflow: hidden; margin-bottom: 10px; }
+    .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #F3A683, var(--primary)); width: 5%; border-radius: 4px; transition: width 0.5s ease; }
+    .btn-pray-today {
+      width: 100%; padding: 11px; border: none; border-radius: 10px;
+      background-color: var(--primary); color: white; font-size: 15px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer;
+    }
+    .btn-pray-today svg { width: 18px; height: 18px; stroke: white; fill: none; stroke-width: 2; }
+
+    .view-section { padding: 0 20px 30px; flex: 1; }
+    .section-label {
+      font-size: 15px; font-weight: 700; margin: 12px 0 10px; color: var(--text-sub);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .section-label svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+    /* 메인 그리드 및 카드 개선 */
+    .member-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .member-card {
+      background-color: var(--card-bg); border: 1px solid #EAE5DE;
+      border-radius: 12px; padding: 10px 12px;
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; transition: all 0.2s; min-height: 52px;
+    }
+    .member-card.is-leader {
+      border-color: #FCD34D;
+      background: linear-gradient(135deg, #FFF 0%, #FFFBEB 100%);
+    }
+
+    .member-info { 
+      display: flex; 
+      align-items: center; 
+      gap: 6px; 
+      flex-wrap: wrap; /* 그리드 파손 방지 */
+      flex: 1;
+      min-width: 0;
+    }
+    
+    /* 💡 메인 화면 이름 크기  */
+    .member-name { 
+      font-size: 17px; 
+      font-weight: 700; 
+      color: var(--text-main);
+      white-space: nowrap;
+    }
+
+    .member-tags {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      flex-wrap: wrap;
+    }
+
+    .badge-role {
+      font-size: 10px; font-weight: 700; color: var(--leader-gold);
+      background-color: var(--leader-bg); padding: 2px 4px; border-radius: 4px;
+      white-space: nowrap;
+    }
+    
+    /* 🚨 카드 전용 우선 뱃지 */
+    .badge-urgent-card {
+      font-size: 10px; font-weight: 700; color: var(--urgent-red);
+      background-color: #FEE2E2; padding: 2px 4px; border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .member-count { font-size: 12px; color: var(--text-sub); background: var(--bg); padding: 3px 6px; border-radius: 8px; flex-shrink: 0; }
+
+    /* 상세 화면 및 그룹 박스 */
+    .detail-view { display: none; flex-direction: column; flex: 1; padding: 0 20px 30px; }
+    .nav-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .btn-back { display: flex; align-items: center; gap: 4px; background: none; border: none; font-size: 16px; font-weight: 700; color: var(--text-sub); cursor: pointer; }
+    .btn-back svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .current-member-title { font-size: 22px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px; }
+    .current-member-title svg { width: 24px; height: 24px; fill: none; stroke-width: 2; }
+
+    .group-tag {
+      display: inline-block; font-size: 13px; font-weight: 700;
+      color: var(--primary); background-color: var(--primary-light);
+      padding: 4px 9px; border-radius: 6px; margin-bottom: 8px;
+    }
+
+    .prayer-group { 
+      background-color: var(--card-bg); 
+      border-radius: var(--radius); 
+      padding: 14px 16px; 
+      margin-bottom: 12px; 
+      border: 1px solid #EAE5DE; 
+    }
+
+    .prayer-group.is-urgent {
+      background-color: var(--urgent-bg);
+      border: 1.5px solid var(--urgent-border);
+    }
+    .group-tag.urgent-tag {
+      color: var(--urgent-red);
+      background-color: #FEE2E2;
+    }
+    
+    .prayer-item { padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px dashed #EAE5DE; }
+    .prayer-item:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+    .prayer-group.is-urgent .prayer-item { border-bottom-color: #FECACA; }
+    
+    .prayer-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .prayer-title { font-size: 18px; font-weight: 700; color: var(--text-main); }
+    .prayer-detail { font-size: 16px; color: var(--text-sub); line-height: 1.55; white-space: pre-line; margin-top: 6px; }
+
+    /* 완료 항목 아코디언 */
+    .prayer-item.is-done { opacity: 0.75; }
+    .prayer-item.is-done .prayer-title {
+      text-decoration: line-through;
+      color: var(--text-sub);
+    }
+    .accordion-header { cursor: pointer; user-select: none; }
+    .badge-done-container { display: flex; align-items: center; gap: 4px; }
+    .badge-done { 
+      background-color: #EAF3EA; color: var(--accent-green); 
+      font-size: 12px; font-weight: 700; padding: 3px 6px; border-radius: 6px; white-space: nowrap; 
+    }
+    .arrow-icon {
+      width: 18px; height: 18px; stroke: var(--text-sub); fill: none; stroke-width: 2;
+      transition: transform 0.2s ease;
+    }
+    .accordion-header.open .arrow-icon { transform: rotate(180deg); }
+    .accordion-content { display: none; padding-top: 4px; }
+    .accordion-content.open { display: block; }
+
+    /* 모달 */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(45, 41, 38, 0.4); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center; z-index: 100;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    .modal-card { background: white; width: 85%; max-width: 320px; border-radius: 20px; padding: 22px 20px; text-align: center; }
+    .modal-icon { width: 48px; height: 48px; background-color: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
+    .modal-icon svg { width: 24px; height: 24px; stroke: var(--primary); fill: none; stroke-width: 2; }
+    .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .modal-desc { font-size: 15px; color: var(--text-sub); line-height: 1.4; margin-bottom: 18px; }
+    .btn-modal-close { width: 100%; padding: 12px; border: none; background-color: var(--primary); color: white; font-size: 16px; font-weight: 700; border-radius: 12px; cursor: pointer; }
+
+    /* 확대 모드 시 적용할 크기 */
+    .font-large .member-name { font-size: 20px; }
+    .font-large .prayer-title { font-size: 21px; }
+    .font-large .prayer-detail { font-size: 19px; }
+    .font-large .group-tag { font-size: 14px; }
+    .font-large .badge-done { font-size: 13px; }
+  </style>
+</head>
+<body>
+
+<div id="app-container">
+  <header>
+    <div class="church-info">
+      <div class="sub">동탄드림교회</div>
+      <div class="title">직장10여 다락방</div>
+    </div>
+    <button class="btn-icon-bg" id="btn-font-toggle" title="글자 크기 변경">
+      <svg viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
+    </button>
+  </header>
+
+  <!-- 메인에서만 보이는 기도 온도 카드 -->
+  <div class="temp-card" id="temp-card">
+    <div class="temp-header">
+      <div class="temp-title">
+        <svg viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3z"/></svg>
+        <span>다락방 기도 온도</span>
+      </div>
+      <div class="temp-value" id="temp-display">5°C</div>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="temp-bar"></div>
+    </div>
+    <button class="btn-pray-today" id="btn-pray">
+      <svg viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+      <span>오늘 기도 참여 완료하기</span>
+    </button>
+  </div>
+
+  <!-- 메인 목록 뷰 -->
+  <div class="view-section" id="main-view">
+    <div class="section-label">
+      <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> 다락방 식구
+    </div>
+    <div class="member-grid" id="member-grid"></div>
+  </div>
+
+  <!-- 상세 정보 뷰 -->
+  <div class="detail-view" id="detail-view">
+    <div class="nav-bar">
+      <button class="btn-back" id="btn-back">
+        <svg viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg> 목록으로
+      </button>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn-icon-bg" id="btn-prev" title="이전 순원">
+          <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <button class="btn-icon-bg" id="btn-next" title="다음 순원">
+          <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="current-member-title" id="member-detail-name"></div>
+    <div style="height: 12px;"></div>
+    <div id="prayer-list-container"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="custom-modal">
+  <div class="modal-card">
+    <div class="modal-icon" id="modal-icon">
+      <svg viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+    </div>
+    <div class="modal-title" id="modal-title">알림</div>
+    <div class="modal-desc" id="modal-desc">내용</div>
+    <button class="btn-modal-close" id="btn-modal-close">확인</button>
+  </div>
+</div>
+
+<script>
+  const TSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ_vkmBZpjtnWxjmH8gaaQYjRdHhpUfTkP6sZUwwse-lvAzKK-VhKyDx_B1t0jXWTbMAe-A4YbOYpJ0/pub?gid=0&single=true&output=tsv";
+
+  let orderedMemberList = [];
+  let prayerData = {};
+  let rolesMap = {};
+  let currentMemberIndex = 0;
+  let isLargeFont = false;
+
+  const tempCard = document.getElementById('temp-card');
+  const mainView = document.getElementById('main-view');
+  const detailView = document.getElementById('detail-view');
+  const memberGrid = document.getElementById('member-grid');
+  const memberDetailName = document.getElementById('member-detail-name');
+  const prayerContainer = document.getElementById('prayer-list-container');
+  const tempDisplay = document.getElementById('temp-display');
+  const tempBar = document.getElementById('temp-bar');
+
+  async function loadData() {
+    try {
+      const response = await fetch(TSV_URL);
+      if (!response.ok) throw new Error("네트워크 응답 오류");
+      const tsvText = await response.text();
+      parseTSVData(tsvText);
+    } catch (error) {
+      console.error(error);
+      showModal("연동 오류", "구글 시트 데이터를 불러오지 못했습니다.");
+    }
+  }
+
+  function parseTSVData(tsvText) {
+    const lines = tsvText.split(/\r?\n/).map(line => line.trim()).filter(line => line);
+    if (lines.length <= 1) return;
+
+    const result = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split('\t');
+      if (cols.length >= 2) {
+        result.push({
+          role: cols[0] ? cols[0].trim() : "순원",
+          name: cols[1] ? cols[1].trim() : "",
+          group: cols[2] ? cols[2].trim() : "기도제목",
+          title: cols[3] ? cols[3].trim() : "",
+          detail: cols[4] ? cols[4].trim() : "",
+          status: cols[5] ? cols[5].trim().toLowerCase() : "active"
+        });
+      }
+    }
+    processRawData(result);
+  }
+
+  function processRawData(data) {
+    prayerData = {};
+    rolesMap = {};
+
+    data.forEach(item => {
+      if (!item.name) return;
+      if (!prayerData[item.name]) {
+        prayerData[item.name] = [];
+        rolesMap[item.name] = item.role || "순원";
+      }
+      prayerData[item.name].push(item);
+    });
+
+    orderedMemberList = Object.keys(prayerData).sort((a, b) => a.localeCompare(b, 'ko'));
+    renderMemberGrid();
+  }
+
+  function renderMemberGrid() {
+    memberGrid.innerHTML = '';
+    orderedMemberList.forEach(name => {
+      const isLeader = rolesMap[name] === '순장';
+      // 🚨 우선 기도제목 포함 여부 확인
+      const hasUrgent = prayerData[name].some(p => p.status === 'urgent' || p.status === '우선');
+      
+      memberGrid.appendChild(createMemberCard(name, isLeader, rolesMap[name], hasUrgent));
+    });
+  }
+
+  function createMemberCard(name, isLeader, roleText, hasUrgent) {
+    const globalIndex = orderedMemberList.indexOf(name);
+    const card = document.createElement('div');
+    card.className = `member-card ${isLeader ? 'is-leader' : ''}`;
+    card.onclick = () => showDetailView(globalIndex);
+    
+    // 💡 안전한 태그 정렬 구조 적용 (유연하게 줄바꿈됨)
+    card.innerHTML = `
+      <div class="member-info">
+        <span class="member-name">${name}</span>
+        <div class="member-tags">
+          ${isLeader ? `<span class="badge-role">${roleText}</span>` : ''}
+          ${hasUrgent ? `<span class="badge-urgent-card">우선</span>` : ''}
+        </div>
+      </div>
+      <span class="member-count">${prayerData[name].length}개</span>
+    `;
+    return card;
+  }
+
+  function showDetailView(index) {
+    currentMemberIndex = index;
+    const name = orderedMemberList[currentMemberIndex];
+    const isLeader = rolesMap[name] === '순장';
+
+    const iconSvg = isLeader 
+  ? `<svg viewBox="0 0 24 24" style="stroke:var(--leader-gold); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;"><circle cx="12" cy="12" r="10"/><path d="m12 17.75-6.172 3.245 1.179-6.873-4.994-4.867 6.9-1.002L12 2l3.087 6.253 6.9 1.002-4.994 4.867 1.179 6.873z"/></svg>`
+  : `<svg viewBox="0 0 24 24" style="stroke:var(--primary); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+  
+    memberDetailName.innerHTML = `${iconSvg} ${name} ${isLeader ? '순장' : '순원'}`;
+    
+    const prayers = prayerData[name];
+    
+    const urgentItems = prayers.filter(p => p.status === 'urgent' || p.status === '우선');
+    const normalPrayers = prayers.filter(p => p.status !== 'urgent' && p.status !== '우선');
+
+    const groups = {};
+    normalPrayers.forEach(p => {
+      const gName = p.group || "기도제목";
+      if (!groups[gName]) groups[gName] = [];
+      groups[gName].push(p);
+    });
+
+    prayerContainer.innerHTML = '';
+
+    if (urgentItems.length > 0) {
+      const urgentGroupEl = document.createElement('div');
+      urgentGroupEl.className = 'prayer-group is-urgent';
+
+      let urgentHTML = `<div class="group-tag urgent-tag">🚨 우선 기도</div>`;
+      urgentItems.forEach(p => {
+        urgentHTML += `
+          <div class="prayer-item">
+            <div class="prayer-title-row">
+              <div class="prayer-title" style="color: var(--urgent-red);">${p.title || '우선 기도제목'}</div>
+            </div>
+            <div class="prayer-detail">${p.detail}</div>
+          </div>
+        `;
+      });
+      urgentGroupEl.innerHTML = urgentHTML;
+      prayerContainer.appendChild(urgentGroupEl);
+    }
+
+    Object.keys(groups).forEach(gName => {
+      const groupEl = document.createElement('div');
+      groupEl.className = 'prayer-group';
+
+      let itemsHTML = `<div class="group-tag">📌 ${gName}</div>`;
+      groups[gName].forEach(p => {
+        const isDone = p.status === 'done' || p.status === '완료' || p.status === '응답완료';
+        
+        if (isDone) {
+          itemsHTML += `
+            <div class="prayer-item is-done">
+              <div class="prayer-title-row accordion-header" onclick="toggleAccordion(this)">
+                <div class="prayer-title">${p.title || gName}</div>
+                <div class="badge-done-container">
+                  <span class="badge-done">✓ 응답완료</span>
+                  <svg class="arrow-icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+              </div>
+              <div class="accordion-content">
+                <div class="prayer-detail">${p.detail}</div>
+              </div>
+            </div>
+          `;
+        } else {
+          itemsHTML += `
+            <div class="prayer-item">
+              <div class="prayer-title-row">
+                <div class="prayer-title">${p.title || gName}</div>
+              </div>
+              <div class="prayer-detail">${p.detail}</div>
+            </div>
+          `;
+        }
+      });
+
+      groupEl.innerHTML = itemsHTML;
+      prayerContainer.appendChild(groupEl);
+    });
+
+    tempCard.style.display = 'none';
+    mainView.style.display = 'none';
+    detailView.style.display = 'flex';
+    window.scrollTo(0, 0);
+  }
+
+  function toggleAccordion(headerEl) {
+    headerEl.classList.toggle('open');
+    const content = headerEl.nextElementSibling;
+    content.classList.toggle('open');
+  }
+
+  function showMainView() {
+    detailView.style.display = 'none';
+    mainView.style.display = 'block';
+    tempCard.style.display = 'block';
+  }
+
+  function navigateMember(direction) {
+    currentMemberIndex += direction;
+    if (currentMemberIndex < 0) currentMemberIndex = orderedMemberList.length - 1;
+    if (currentMemberIndex >= orderedMemberList.length) currentMemberIndex = 0;
+    showDetailView(currentMemberIndex);
+  }
+
+  function toggleFontSize() {
+    isLargeFont = !isLargeFont;
+    document.body.classList.toggle('font-large', isLargeFont);
+    showModal("글자 크기 변경", isLargeFont ? "글자 크기가 확대되었습니다." : "글자 크기가 기본으로 설정되었습니다.");
+  }
+
+  function initTemperature() {
+    const lastPrayTime = localStorage.getItem('last_pray_time');
+    let streak = parseInt(localStorage.getItem('pray_streak') || '0');
+    let temp = 5;
+
+    if (lastPrayTime) {
+      const diffHours = (new Date() - new Date(lastPrayTime)) / (1000 * 60 * 60);
+      if (diffHours <= 36) {
+        temp = 36.5 + ((streak - 1) * 2.5);
+        temp = Math.min(100, temp);
+      } else if (diffHours <= 72) {
+        temp = 36.5;
+      } else {
+        temp = 10;
+      }
+    }
+    updateTempUI(temp);
+  }
+
+  function recordPrayer() {
+    const now = new Date();
+    // YYYY-MM-DD 형식으로 오늘 날짜 추출
+    const todayStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+    
+    const lastPrayDate = localStorage.getItem('last_pray_date');
+    let streak = parseInt(localStorage.getItem('pray_streak') || '0');
+
+    // 이미 오늘 눌렀는지 확인 (날짜 비교)
+    if (lastPrayDate === todayStr) {
+      showModal("기도 완료", "오늘 이미 기도를 완료하셨습니다!\n내일(밤 12시 이후)에 다시 참여해주세요.");
+      return;
+    }
+
+    // 연속 기도 일수 계산
+    if (lastPrayDate) {
+      const lastDate = new Date(lastPrayDate);
+      const diffTime = Math.abs(now - lastDate);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays <= 2) { 
+        streak += 1; // 어제 누르고 오늘 누른 경우 (연속 성공)
+      } else {
+        streak = 1; // 며칠 쉬었다가 누른 경우 초기화
+      }
+    } else {
+      streak = 1;
+    }
+
+    // 정보 저장
+    localStorage.getItem('last_pray_time', now.toISOString());
+    localStorage.setItem('last_pray_date', todayStr);
+    localStorage.setItem('pray_streak', streak.toString());
+
+    // 기도 온도 계산 (기본 36.5도 + 연속 1일당 2.5도 상승, 최대 100도)
+    let temp = 36.5 + ((streak - 1) * 2.5);
+    temp = Math.min(100, temp);
+
+    updateTempUI(temp);
+    showModal("기도 완료 🙏", `오늘의 기도에 함께해주셔서 감사합니다!\n현재 다락방 기도 온도가 ${temp}°C입니다.`);
+  }
+
+  function updateTempUI(temp) {
+    tempDisplay.textContent = `${temp}°C`;
+    tempBar.style.width = `${Math.min(100, temp)}%`;
+  }
+
+  function showModal(title, desc) {
+    document.getElementById('modal-title').innerText = title;
+    document.getElementById('modal-desc').innerText = desc;
+    document.getElementById('custom-modal').classList.add('active');
+  }
+
+  function closeModal() {
+    document.getElementById('custom-modal').classList.remove('active');
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    initTemperature();
+    loadData();
+
+    document.getElementById('btn-back').addEventListener('click', showMainView);
+    document.getElementById('btn-prev').addEventListener('click', () => navigateMember(-1));
+    document.getElementById('btn-next').addEventListener('click', () => navigateMember(1));
+    document.getElementById('btn-font-toggle').addEventListener('click', toggleFontSize);
+    document.getElementById('btn-modal-close').addEventListener('click', closeModal);
+    document.getElementById('btn-pray').addEventListener('click', recordPrayer);
+  });
+</script>
+</body>
+</html>
