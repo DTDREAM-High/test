@@ -105,7 +105,7 @@
     }
     .section-label svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
 
-    /* 메인 그리드 및 카드 */
+    /* 메인 그리드 및 카드 개선 */
     .member-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .member-card {
       background-color: var(--card-bg); border: 1px solid #EAE5DE;
@@ -152,7 +152,7 @@
       background-color: #FEE2E2; padding: 2px 4px; border-radius: 4px;
       white-space: nowrap;
     }
-
+    
     .skeleton-card {
       background: #EAE5DE;
       border-radius: 12px;
@@ -174,6 +174,14 @@
     .btn-back svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
     .current-member-title { font-size: 22px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px; }
     .current-member-title svg { width: 24px; height: 24px; fill: none; stroke-width: 2; }
+
+    /* \n (줄바꿈)을 화면의 실제 줄바꿈으로 자동 표시해주는 CSS */
+    .prayer-text, 
+    .modal-body, 
+    .member-detail,
+    .prayer-detail { 
+      white-space: pre-line; 
+    }
 
     .group-tag {
       display: inline-block; font-size: 13px; font-weight: 700;
@@ -203,16 +211,8 @@
     .prayer-group.is-urgent .prayer-item { border-bottom-color: #FECACA; }
     
     .prayer-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .prayer-title { font-size: 18px; font-weight: 700; color: var(--text-main); white-space: pre-wrap; }
-    
-    .prayer-detail { 
-      font-size: 16px; 
-      color: var(--text-sub); 
-      line-height: 1.55; 
-      white-space: pre-wrap; 
-      word-break: break-word;
-      margin-top: 6px; 
-    }
+    .prayer-title { font-size: 18px; font-weight: 700; color: var(--text-main); }
+    .prayer-detail { font-size: 16px; color: var(--text-sub); line-height: 1.55; margin-top: 6px; }
 
     /* 완료 항목 아코디언 */
     .prayer-item.is-done { opacity: 0.75; }
@@ -246,9 +246,10 @@
     .modal-icon { width: 48px; height: 48px; background-color: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
     .modal-icon svg { width: 24px; height: 24px; stroke: var(--primary); fill: none; stroke-width: 2; }
     .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
-    .modal-desc { font-size: 15px; color: var(--text-sub); line-height: 1.4; margin-bottom: 18px; white-space: pre-wrap; }
+    .modal-desc { font-size: 15px; color: var(--text-sub); line-height: 1.4; margin-bottom: 18px; white-space: pre-line; }
     .btn-modal-close { width: 100%; padding: 12px; border: none; background-color: var(--primary); color: white; font-size: 16px; font-weight: 700; border-radius: 12px; cursor: pointer; }
 
+    /* 확대 모드 시 적용할 크기 */
     .font-large .member-name { font-size: 20px; }
     .font-large .prayer-title { font-size: 21px; }
     .font-large .prayer-detail { font-size: 19px; }
@@ -269,6 +270,7 @@
     </button>
   </header>
 
+  <!-- 메인에서만 보이는 기도 온도 카드 -->
   <div class="temp-card" id="temp-card">
     <div class="temp-header">
       <div class="temp-title">
@@ -286,6 +288,7 @@
     </button>
   </div>
 
+  <!-- 메인 목록 뷰 -->
   <div class="view-section" id="main-view">
     <div class="section-label">
       <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> 다락방 식구
@@ -293,6 +296,7 @@
     <div class="member-grid" id="member-grid"></div>
   </div>
 
+  <!-- 상세 정보 뷰 -->
   <div class="detail-view" id="detail-view">
     <div class="nav-bar">
       <button class="btn-back" id="btn-back">
@@ -342,6 +346,7 @@
   const tempDisplay = document.getElementById('temp-display');
   const tempBar = document.getElementById('temp-bar');
 
+  // 1. 스켈레톤(UI 뼈대) 표시
   function renderSkeleton() {
     memberGrid.innerHTML = '';
     for (let i = 0; i < 8; i++) {
@@ -351,6 +356,7 @@
     }
   }
 
+  // 2. 캐시 우선 표시 및 데이터 로딩
   async function loadData() {
     const cachedData = localStorage.getItem('cached_prayer_tsv');
     if (cachedData) {
@@ -376,85 +382,29 @@
     }
   }
 
-// 큰따옴표 벗기기 및 실제 줄바꿈(CRLF/LF) 보존 파서
-  function parseCSVTSV(text) {
-    const rows = [];
-    let currentRow = [];
-    let currentCell = '';
-    let inQuotes = false;
-
-    for (let i = 0; i < text.length; i++) {
-      const char = text[i];
-      const nextChar = text[i + 1];
-
-      if (char === '"') {
-        if (inQuotes && nextChar === '"') {
-          currentCell += '"';
-          i++;
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if (char === '\t' && !inQuotes) {
-        currentRow.push(cleanText(currentCell));
-        currentCell = '';
-      } else if ((char === '\r' || char === '\n') && !inQuotes) {
-        if (char === '\r' && nextChar === '\n') {
-          i++;
-        }
-        currentRow.push(cleanText(currentCell));
-        if (currentRow.some(cell => cell.length > 0)) {
-          rows.push(currentRow);
-        }
-        currentRow = [];
-        currentCell = '';
-      } else {
-        currentCell += char;
-      }
-    }
-    
-    if (currentCell.length > 0 || currentRow.length > 0) {
-      currentRow.push(cleanText(currentCell));
-      if (currentRow.some(cell => cell.length > 0)) {
-        rows.push(currentRow);
-      }
-    }
-    return rows;
-  }
-
-  function cleanText(text) {
-    if (!text) return '';
-    let cleaned = text.trim();
-    
-    // 1. 구글 시트가 감싼 앞뒤 큰따옴표(") 제거
-    if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
-      cleaned = cleaned.slice(1, -1);
-    }
-    
-    // 2. 구글 시트 특유의 줄바꿈 문자(CRLF, LF, \n) 표준화
-    cleaned = cleaned
-      .replace(/\r\n/g, '\n')  // Windows 줄바꿈 변환
-      .replace(/\r/g, '\n')    // Mac 줄바꿈 변환
-      .replace(/\\n/g, '\n')   // \n 텍스트 변환
-      .replace(/""/g, '"');    // 따옴표 중복 제거
-
-    return cleaned;
-  }
+  // 3. TSV 데이터 파싱 (\n 텍스트 치환 적용)
   function parseTSVData(tsvText) {
-    const rows = parseCSVTSV(tsvText);
-    if (rows.length <= 1) return;
+    const lines = tsvText.split(/\r?\n/).map(line => line.trim()).filter(line => line);
+    if (lines.length <= 1) return;
 
     const result = [];
-    // 첫 행(헤더) 제외
-    for (let i = 1; i < rows.length; i++) {
-      const cols = rows[i];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split('\t');
       if (cols.length >= 2) {
+        // 💡 구글 시트에 문자로 입력된 '\n' 또는 '\\n'을 브라우저가 인식하는 줄바꿈 문자로 변경
+        let detailText = cols[4] ? cols[4].trim() : "";
+        detailText = detailText.replace(/\\n/g, '\n');
+
+        let titleText = cols[3] ? cols[3].trim() : "";
+        titleText = titleText.replace(/\\n/g, '\n');
+
         result.push({
-          role: cols[0] || "순원",
-          name: cols[1] || "",
-          group: cols[2] || "기도제목",
-          title: cols[3] || "",
-          detail: cols[4] || "",
-          status: (cols[5] || "active").toLowerCase()
+          role: cols[0] ? cols[0].trim() : "순원",
+          name: cols[1] ? cols[1].trim() : "",
+          group: cols[2] ? cols[2].trim() : "기도제목",
+          title: titleText,
+          detail: detailText,
+          status: cols[5] ? cols[5].trim().toLowerCase() : "active"
         });
       }
     }
@@ -496,25 +446,15 @@
     
     card.innerHTML = `
       <div class="member-info">
-        <span class="member-name">${escapeHtml(name)}</span>
+        <span class="member-name">${name}</span>
         <div class="member-tags">
-          ${isLeader ? `<span class="badge-role">${escapeHtml(roleText)}</span>` : ''}
+          ${isLeader ? `<span class="badge-role">${roleText}</span>` : ''}
           ${hasUrgent ? `<span class="badge-urgent-card">우선</span>` : ''}
         </div>
       </div>
       <span class="member-count">${prayerData[name].length}개</span>
     `;
     return card;
-  }
-
-  function escapeHtml(text) {
-    if (!text) return '';
-    return text
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
   }
 
   function showDetailView(index) {
@@ -526,10 +466,9 @@
       ? `<svg viewBox="0 0 24 24" style="fill:var(--leader-gold); stroke:var(--leader-gold); stroke-width:1;"><path d="M12 2l3.09 6.26 6.91 1.01-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`
       : `<svg viewBox="0 0 24 24" style="stroke:var(--primary); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
     
-    memberDetailName.innerHTML = `${iconSvg} ${escapeHtml(name)} ${isLeader ? '순장' : '순원'}`;
+    memberDetailName.innerHTML = `${iconSvg} ${name} ${isLeader ? '순장' : '순원'}`;
     
     const prayers = prayerData[name];
-    
     const urgentItems = prayers.filter(p => p.status === 'urgent' || p.status === '우선');
     const normalPrayers = prayers.filter(p => p.status !== 'urgent' && p.status !== '우선');
 
@@ -551,9 +490,9 @@
         urgentHTML += `
           <div class="prayer-item">
             <div class="prayer-title-row">
-              <div class="prayer-title" style="color: var(--urgent-red);">${escapeHtml(p.title || '우선 기도제목')}</div>
+              <div class="prayer-title" style="color: var(--urgent-red);">${p.title || '우선 기도제목'}</div>
             </div>
-            <div class="prayer-detail">${escapeHtml(p.detail)}</div>
+            <div class="prayer-detail">${p.detail}</div>
           </div>
         `;
       });
@@ -565,7 +504,7 @@
       const groupEl = document.createElement('div');
       groupEl.className = 'prayer-group';
 
-      let itemsHTML = `<div class="group-tag">📌 ${escapeHtml(gName)}</div>`;
+      let itemsHTML = `<div class="group-tag">📌 ${gName}</div>`;
       groups[gName].forEach(p => {
         const isDone = p.status === 'done' || p.status === '완료' || p.status === '응답완료';
         
@@ -573,14 +512,14 @@
           itemsHTML += `
             <div class="prayer-item is-done">
               <div class="prayer-title-row accordion-header" onclick="toggleAccordion(this)">
-                <div class="prayer-title">${escapeHtml(p.title || gName)}</div>
+                <div class="prayer-title">${p.title || gName}</div>
                 <div class="badge-done-container">
                   <span class="badge-done">✓ 응답완료</span>
                   <svg class="arrow-icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
                 </div>
               </div>
               <div class="accordion-content">
-                <div class="prayer-detail">${escapeHtml(p.detail)}</div>
+                <div class="prayer-detail">${p.detail}</div>
               </div>
             </div>
           `;
@@ -588,9 +527,9 @@
           itemsHTML += `
             <div class="prayer-item">
               <div class="prayer-title-row">
-                <div class="prayer-title">${escapeHtml(p.title || gName)}</div>
+                <div class="prayer-title">${p.title || gName}</div>
               </div>
-              <div class="prayer-detail">${escapeHtml(p.detail)}</div>
+              <div class="prayer-detail">${p.detail}</div>
             </div>
           `;
         }
