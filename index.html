@@ -376,7 +376,7 @@
     }
   }
 
-  // 큰따옴표("") 및 셀 내 엔터(\n)까지 올바르게 다루는 TSV 파서
+// 큰따옴표 벗기기 및 실제 줄바꿈(CRLF/LF) 보존 파서
   function parseCSVTSV(text) {
     const rows = [];
     let currentRow = [];
@@ -423,9 +423,17 @@
 
   function cleanText(text) {
     if (!text) return '';
-    return text.replace(/\\n/g, '\n').trim();
+    let cleaned = text;
+    // 1. 구글 시트가 셀을 감싸느라 붙인 앞뒤 큰따옴표(") 제거
+    if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
+      cleaned = cleaned.slice(1, -1);
+    }
+    // 2. 따옴표 이중 처리("" -> ") 복원 및 \n 텍스트 변환
+    cleaned = cleaned.replace(/""/g, '"').replace(/\\n/g, '\n');
+    
+    // 3. 앞뒤 공백만 제거하되, 내부 줄바꿈(\n)은 절대 건드리지 않음
+    return cleaned.trim();
   }
-
   function parseTSVData(tsvText) {
     const rows = parseCSVTSV(tsvText);
     if (rows.length <= 1) return;
