@@ -423,16 +423,21 @@
 
   function cleanText(text) {
     if (!text) return '';
-    let cleaned = text;
-    // 1. 구글 시트가 셀을 감싸느라 붙인 앞뒤 큰따옴표(") 제거
+    let cleaned = text.trim();
+    
+    // 1. 구글 시트가 감싼 앞뒤 큰따옴표(") 제거
     if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
       cleaned = cleaned.slice(1, -1);
     }
-    // 2. 따옴표 이중 처리("" -> ") 복원 및 \n 텍스트 변환
-    cleaned = cleaned.replace(/""/g, '"').replace(/\\n/g, '\n');
     
-    // 3. 앞뒤 공백만 제거하되, 내부 줄바꿈(\n)은 절대 건드리지 않음
-    return cleaned.trim();
+    // 2. 구글 시트 특유의 줄바꿈 문자(CRLF, LF, \n) 표준화
+    cleaned = cleaned
+      .replace(/\r\n/g, '\n')  // Windows 줄바꿈 변환
+      .replace(/\r/g, '\n')    // Mac 줄바꿈 변환
+      .replace(/\\n/g, '\n')   // \n 텍스트 변환
+      .replace(/""/g, '"');    // 따옴표 중복 제거
+
+    return cleaned;
   }
   function parseTSVData(tsvText) {
     const rows = parseCSVTSV(tsvText);
