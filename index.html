@@ -105,7 +105,7 @@
     }
     .section-label svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
 
-    /* 메인 그리드 및 카드 개선 */
+    /* 메인 그리드 및 카드 */
     .member-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .member-card {
       background-color: var(--card-bg); border: 1px solid #EAE5DE;
@@ -122,12 +122,11 @@
       display: flex; 
       align-items: center; 
       gap: 6px; 
-      flex-wrap: wrap; /* 그리드 파손 방지 */
+      flex-wrap: wrap;
       flex: 1;
       min-width: 0;
     }
     
-    /* 메인 화면 이름 크기 */
     .member-name { 
       font-size: 17px; 
       font-weight: 700; 
@@ -148,13 +147,12 @@
       white-space: nowrap;
     }
     
-    /* 카드 전용 우선 뱃지 */
     .badge-urgent-card {
       font-size: 10px; font-weight: 700; color: var(--urgent-red);
       background-color: #FEE2E2; padding: 2px 4px; border-radius: 4px;
       white-space: nowrap;
     }
-    /* 로딩 스켈레톤 애니메이션 */
+
     .skeleton-card {
       background: #EAE5DE;
       border-radius: 12px;
@@ -205,8 +203,17 @@
     .prayer-group.is-urgent .prayer-item { border-bottom-color: #FECACA; }
     
     .prayer-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .prayer-title { font-size: 18px; font-weight: 700; color: var(--text-main); }
-    .prayer-detail { font-size: 16px; color: var(--text-sub); line-height: 1.55; white-space: pre-line; margin-top: 6px; }
+    .prayer-title { font-size: 18px; font-weight: 700; color: var(--text-main); white-space: pre-wrap; }
+    
+    /* 줄바꿈 보장 스타일 적용 */
+    .prayer-detail { 
+      font-size: 16px; 
+      color: var(--text-sub); 
+      line-height: 1.55; 
+      white-space: pre-wrap; 
+      word-break: break-word;
+      margin-top: 6px; 
+    }
 
     /* 완료 항목 아코디언 */
     .prayer-item.is-done { opacity: 0.75; }
@@ -240,10 +247,9 @@
     .modal-icon { width: 48px; height: 48px; background-color: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
     .modal-icon svg { width: 24px; height: 24px; stroke: var(--primary); fill: none; stroke-width: 2; }
     .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
-    .modal-desc { font-size: 15px; color: var(--text-sub); line-height: 1.4; margin-bottom: 18px; }
+    .modal-desc { font-size: 15px; color: var(--text-sub); line-height: 1.4; margin-bottom: 18px; white-space: pre-wrap; }
     .btn-modal-close { width: 100%; padding: 12px; border: none; background-color: var(--primary); color: white; font-size: 16px; font-weight: 700; border-radius: 12px; cursor: pointer; }
 
-    /* 확대 모드 시 적용할 크기 */
     .font-large .member-name { font-size: 20px; }
     .font-large .prayer-title { font-size: 21px; }
     .font-large .prayer-detail { font-size: 19px; }
@@ -264,7 +270,6 @@
     </button>
   </header>
 
-  <!-- 메인에서만 보이는 기도 온도 카드 -->
   <div class="temp-card" id="temp-card">
     <div class="temp-header">
       <div class="temp-title">
@@ -282,7 +287,6 @@
     </button>
   </div>
 
-  <!-- 메인 목록 뷰 -->
   <div class="view-section" id="main-view">
     <div class="section-label">
       <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> 다락방 식구
@@ -290,7 +294,6 @@
     <div class="member-grid" id="member-grid"></div>
   </div>
 
-  <!-- 상세 정보 뷰 -->
   <div class="detail-view" id="detail-view">
     <div class="nav-bar">
       <button class="btn-back" id="btn-back">
@@ -340,7 +343,12 @@
   const tempDisplay = document.getElementById('temp-display');
   const tempBar = document.getElementById('temp-bar');
 
-  // 1. 데이터 로딩 중 보여줄 스켈레톤(UI 뼈대) 생성 함수
+  // 문자열 내 역슬래시+n (\n) 또는 실제 줄바꿈 문자를 일관되게 정형화
+  function formatText(str) {
+    if (!str) return '';
+    return str.replace(/\\n/g, '\n').trim();
+  }
+
   function renderSkeleton() {
     memberGrid.innerHTML = '';
     for (let i = 0; i < 8; i++) {
@@ -350,23 +358,19 @@
     }
   }
 
-  // 2. 캐시 우선 표시 + 데이터 변경 시에만 화면 갱신하는 loadData 함수
   async function loadData() {
-    // A. 저장된 캐시가 있으면 즉시(0초) 화면에 표시
     const cachedData = localStorage.getItem('cached_prayer_tsv');
     if (cachedData) {
       parseTSVData(cachedData);
     } else {
-      renderSkeleton(); // 캐시가 전혀 없으면 스켈레톤 카드 표시
+      renderSkeleton();
     }
 
-    // B. 백그라운드에서 구글 시트 최신 데이터 가져오기
     try {
       const response = await fetch(TSV_URL);
       if (!response.ok) throw new Error("네트워크 응답 오류");
       const tsvText = await response.text();
       
-      // 데이터가 새로 바뀌었을 때만 캐시를 업데이트하고 화면을 다시 렌더링 (깜빡임 방지)
       if (tsvText !== cachedData) {
         localStorage.setItem('cached_prayer_tsv', tsvText);
         parseTSVData(tsvText);
@@ -388,12 +392,12 @@
       const cols = lines[i].split('\t');
       if (cols.length >= 2) {
         result.push({
-          role: cols[0] ? cols[0].trim() : "순원",
-          name: cols[1] ? cols[1].trim() : "",
-          group: cols[2] ? cols[2].trim() : "기도제목",
-          title: cols[3] ? cols[3].trim() : "",
-          detail: cols[4] ? cols[4].trim() : "",
-          status: cols[5] ? cols[5].trim().toLowerCase() : "active"
+          role: formatText(cols[0]) || "순원",
+          name: formatText(cols[1]),
+          group: formatText(cols[2]) || "기도제목",
+          title: formatText(cols[3]),
+          detail: formatText(cols[4]),
+          status: formatText(cols[5]).toLowerCase() || "active"
         });
       }
     }
@@ -421,7 +425,6 @@
     memberGrid.innerHTML = '';
     orderedMemberList.forEach(name => {
       const isLeader = rolesMap[name] === '순장';
-      // 우선 기도제목 포함 여부 확인
       const hasUrgent = prayerData[name].some(p => p.status === 'urgent' || p.status === '우선');
       
       memberGrid.appendChild(createMemberCard(name, isLeader, rolesMap[name], hasUrgent));
@@ -434,18 +437,27 @@
     card.className = `member-card ${isLeader ? 'is-leader' : ''}`;
     card.onclick = () => showDetailView(globalIndex);
     
-    // 안전한 태그 정렬 구조 적용
     card.innerHTML = `
       <div class="member-info">
-        <span class="member-name">${name}</span>
+        <span class="member-name">${escapeHtml(name)}</span>
         <div class="member-tags">
-          ${isLeader ? `<span class="badge-role">${roleText}</span>` : ''}
+          ${isLeader ? `<span class="badge-role">${escapeHtml(roleText)}</span>` : ''}
           ${hasUrgent ? `<span class="badge-urgent-card">우선</span>` : ''}
         </div>
       </div>
       <span class="member-count">${prayerData[name].length}개</span>
     `;
     return card;
+  }
+
+  function escapeHtml(text) {
+    if (!text) return '';
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
 
   function showDetailView(index) {
@@ -457,7 +469,7 @@
       ? `<svg viewBox="0 0 24 24" style="fill:var(--leader-gold); stroke:var(--leader-gold); stroke-width:1;"><path d="M12 2l3.09 6.26 6.91 1.01-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`
       : `<svg viewBox="0 0 24 24" style="stroke:var(--primary); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
     
-    memberDetailName.innerHTML = `${iconSvg} ${name} ${isLeader ? '순장' : '순원'}`;
+    memberDetailName.innerHTML = `${iconSvg} ${escapeHtml(name)} ${isLeader ? '순장' : '순원'}`;
     
     const prayers = prayerData[name];
     
@@ -482,9 +494,9 @@
         urgentHTML += `
           <div class="prayer-item">
             <div class="prayer-title-row">
-              <div class="prayer-title" style="color: var(--urgent-red);">${p.title || '우선 기도제목'}</div>
+              <div class="prayer-title" style="color: var(--urgent-red);">${escapeHtml(p.title || '우선 기도제목')}</div>
             </div>
-            <div class="prayer-detail">${p.detail}</div>
+            <div class="prayer-detail">${escapeHtml(p.detail)}</div>
           </div>
         `;
       });
@@ -496,7 +508,7 @@
       const groupEl = document.createElement('div');
       groupEl.className = 'prayer-group';
 
-      let itemsHTML = `<div class="group-tag">📌 ${gName}</div>`;
+      let itemsHTML = `<div class="group-tag">📌 ${escapeHtml(gName)}</div>`;
       groups[gName].forEach(p => {
         const isDone = p.status === 'done' || p.status === '완료' || p.status === '응답완료';
         
@@ -504,14 +516,14 @@
           itemsHTML += `
             <div class="prayer-item is-done">
               <div class="prayer-title-row accordion-header" onclick="toggleAccordion(this)">
-                <div class="prayer-title">${p.title || gName}</div>
+                <div class="prayer-title">${escapeHtml(p.title || gName)}</div>
                 <div class="badge-done-container">
                   <span class="badge-done">✓ 응답완료</span>
                   <svg class="arrow-icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
                 </div>
               </div>
               <div class="accordion-content">
-                <div class="prayer-detail">${p.detail}</div>
+                <div class="prayer-detail">${escapeHtml(p.detail)}</div>
               </div>
             </div>
           `;
@@ -519,9 +531,9 @@
           itemsHTML += `
             <div class="prayer-item">
               <div class="prayer-title-row">
-                <div class="prayer-title">${p.title || gName}</div>
+                <div class="prayer-title">${escapeHtml(p.title || gName)}</div>
               </div>
-              <div class="prayer-detail">${p.detail}</div>
+              <div class="prayer-detail">${escapeHtml(p.detail)}</div>
             </div>
           `;
         }
@@ -562,11 +574,10 @@
     showModal("글자 크기 변경", isLargeFont ? "글자 크기가 확대되었습니다." : "글자 크기가 기본으로 설정되었습니다.");
   }
 
-  // 접속 시 현재 기온 계산 및 표시
   function initTemperature() {
     const lastPrayDate = localStorage.getItem('last_pray_date');
     let streak = parseInt(localStorage.getItem('pray_streak') || '0');
-    let temp = 5; // 기본 5도
+    let temp = 5;
 
     if (lastPrayDate) {
       const today = new Date();
@@ -578,11 +589,9 @@
       const diffDays = Math.round((today - lastDate) / (1000 * 60 * 60 * 24));
 
       if (diffDays <= 1) {
-        // 어제 또는 오늘 기도함 -> 연속 체온 유지
         temp = 36.5 + ((streak - 1) * 2.5);
         temp = Math.min(100, temp);
       } else {
-        // 2일 이상 안 함 -> 온도가 다시 식음 (10도)
         temp = 10;
         localStorage.setItem('pray_streak', '0');
       }
@@ -590,16 +599,13 @@
     updateTempUI(temp);
   }
 
-  // 기도 참여 버튼 클릭 시
   function recordPrayer() {
     const now = new Date();
-    // YYYY-MM-DD 날짜 추출
     const todayStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
     
     const lastPrayDate = localStorage.getItem('last_pray_date');
     let streak = parseInt(localStorage.getItem('pray_streak') || '0');
 
-    // 이미 오늘 눌렀는지 체크 (날짜 기준)
     if (lastPrayDate === todayStr) {
       showModal("기도 완료", "오늘 이미 기도를 완료하셨습니다!\n내일 다시 참여해 주세요.");
       return;
@@ -613,22 +619,17 @@
       const diffDays = Math.round((todayObj - lastObj) / (1000 * 60 * 60 * 24));
 
       if (diffDays === 1) {
-        // 어제 누르고 오늘 또 누름 (연속 성공 -> streak 증가!)
         streak += 1;
       } else {
-        // 중간에 날짜를 거름 (연속 끊김 -> 1일차부터 재시작)
         streak = 1;
       }
     } else {
-      // 처음 누름
       streak = 1;
     }
 
-    // 기록 저장
     localStorage.setItem('last_pray_date', todayStr);
     localStorage.setItem('pray_streak', streak.toString());
 
-    // 온도 계산: 1일차 36.5도 / 2일차 39.0도 / 3일차 41.5도 ... (최대 100도)
     let temp = 36.5 + ((streak - 1) * 2.5);
     temp = Math.min(100, temp);
 
