@@ -1,20 +1,22 @@
 {
-  "name": "동탄드림교회 직장10여 기도수첩",
-  "short_name": "기도수첩",
+  "name": "오늘의 달고나 - 동탄드림교회 고등부",
+  "short_name": "오늘의달고나",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#F9F6F0",
-  "theme_color": "#E87A5D",
+  "background_color": "#fcfaf8",
+  "theme_color": "#e06d53",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/2907/2907150.png",
+      "src": "cards/icon-app.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/2907/2907150.png",
+      "src": "cards/icon-app.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
