@@ -205,7 +205,6 @@
     .prayer-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .prayer-title { font-size: 18px; font-weight: 700; color: var(--text-main); white-space: pre-wrap; }
     
-    /* 줄바꿈 보장 스타일 적용 */
     .prayer-detail { 
       font-size: 16px; 
       color: var(--text-sub); 
@@ -343,12 +342,6 @@
   const tempDisplay = document.getElementById('temp-display');
   const tempBar = document.getElementById('temp-bar');
 
-  // 문자열 내 역슬래시+n (\n) 또는 실제 줄바꿈 문자를 일관되게 정형화
-  function formatText(str) {
-    if (!str) return '';
-    return str.replace(/\\n/g, '\n').trim();
-  }
-
   function renderSkeleton() {
     memberGrid.innerHTML = '';
     for (let i = 0; i < 8; i++) {
@@ -383,21 +376,72 @@
     }
   }
 
+  // 큰따옴표("") 및 셀 내 엔터(\n)까지 올바르게 다루는 TSV 파서
+  function parseCSVTSV(text) {
+    const rows = [];
+    let currentRow = [];
+    let currentCell = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      const nextChar = text[i + 1];
+
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          currentCell += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === '\t' && !inQuotes) {
+        currentRow.push(cleanText(currentCell));
+        currentCell = '';
+      } else if ((char === '\r' || char === '\n') && !inQuotes) {
+        if (char === '\r' && nextChar === '\n') {
+          i++;
+        }
+        currentRow.push(cleanText(currentCell));
+        if (currentRow.some(cell => cell.length > 0)) {
+          rows.push(currentRow);
+        }
+        currentRow = [];
+        currentCell = '';
+      } else {
+        currentCell += char;
+      }
+    }
+    
+    if (currentCell.length > 0 || currentRow.length > 0) {
+      currentRow.push(cleanText(currentCell));
+      if (currentRow.some(cell => cell.length > 0)) {
+        rows.push(currentRow);
+      }
+    }
+    return rows;
+  }
+
+  function cleanText(text) {
+    if (!text) return '';
+    return text.replace(/\\n/g, '\n').trim();
+  }
+
   function parseTSVData(tsvText) {
-    const lines = tsvText.split(/\r?\n/).map(line => line.trim()).filter(line => line);
-    if (lines.length <= 1) return;
+    const rows = parseCSVTSV(tsvText);
+    if (rows.length <= 1) return;
 
     const result = [];
-    for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i].split('\t');
+    // 첫 행(헤더) 제외
+    for (let i = 1; i < rows.length; i++) {
+      const cols = rows[i];
       if (cols.length >= 2) {
         result.push({
-          role: formatText(cols[0]) || "순원",
-          name: formatText(cols[1]),
-          group: formatText(cols[2]) || "기도제목",
-          title: formatText(cols[3]),
-          detail: formatText(cols[4]),
-          status: formatText(cols[5]).toLowerCase() || "active"
+          role: cols[0] || "순원",
+          name: cols[1] || "",
+          group: cols[2] || "기도제목",
+          title: cols[3] || "",
+          detail: cols[4] || "",
+          status: (cols[5] || "active").toLowerCase()
         });
       }
     }
